@@ -19,13 +19,37 @@ cloudinary.v2.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// === Helpers ===
+// === Middlewares ===
+app.use(express.json());
+
+// === CORS Config ===
+// Barcha domenlarga ruxsat berish (development uchun)
+app.use(cors());
+
+// Yoki faqat frontend domenga ruxsat berish (productionda tavsiya qilinadi)
+app.use(
+  cors({
+    origin: "https://cheery-sopapillas-2d7ff4.netlify.app", 
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true,
+  })
+);
+
+// === Static fayllarni servis qilish ===
+// Frontend build fayllari backend static papkasida bo‘lsa, shu tarzda qo‘shamiz
+app.use(express.static(path.join(process.cwd(), "frontend/dist")));
+
+// Frontend route handler (SPA uchun)
+app.get("*", (req, res) => {
+  res.sendFile(path.join(process.cwd(), "frontend/dist/index.html"));
+});
+
+// === HELPERS ===
 const getTimestamps = () => ({
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
 });
 
-// Cloudinary upload helper
 const uploadToCloudinary = async (filePath) => {
   return new Promise((resolve, reject) => {
     cloudinary.v2.uploader.upload(
@@ -192,7 +216,7 @@ app.delete("/api/categories/:id", async (req, res, next) => {
   }
 });
 
-// === Error handler ===
+// === ERROR HANDLER ===
 app.use((err, req, res, next) => {
   console.error("❌ Error:", err.message);
   res.status(500).json({ error: err.message || "Internal Server Error" });
